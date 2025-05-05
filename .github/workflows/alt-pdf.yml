@@ -43,7 +43,8 @@ jobs:
       - name: Find and convert Markdown files to PDF
         run: |
           echo "Finding Markdown files..."
-          markdown_files=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*")
+          # Exclude './_upload/*' directory to avoid processing temporary or uploaded files
+          markdown_files=$(find . -name "*.md" -not -path "./_upload/*" -not -path "./node_modules/*" -not -path "./.git/*")
           
           echo "Found Markdown files:"
           echo "$markdown_files"
