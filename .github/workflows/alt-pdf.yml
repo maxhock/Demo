@@ -33,6 +33,9 @@ jobs:
         uses: r-lib/actions/setup-pandoc@v2
         with:
           pandoc-version: '2.19.2'
+          
+      - name: Install LaTeX dependencies
+        run: sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-fonts-extra
         
       - name: Create output directory
         run: mkdir -p pdf_output
