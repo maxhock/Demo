@@ -1,0 +1,74 @@
+# GitHub Action for converting Markdown to PDF
+name: Generate PDF from Markdown
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+    paths:
+      - '**.md'
+      - '_config.yml'
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN
+permissions:
+  contents: read
+
+# Allow only one concurrent conversion
+concurrency:
+  group: "markdown-to-pdf"
+  cancel-in-progress: false
+
+jobs:
+  convert-to-pdf:
+    name: Convert Markdown to PDF
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+        with:
+          pandoc-version: '2.19.2'
+        
+      - name: Create output directory
+        run: mkdir -p pdf_output
+          
+      - name: Find and convert Markdown files to PDF
+        run: |
+          echo "Finding Markdown files..."
+          markdown_files=$(find . -name "*.md" -not -path "./node_modules/*" -not -path "./.git/*")
+          
+          echo "Found Markdown files:"
+          echo "$markdown_files"
+          
+          # Process each Markdown file and convert to PDF
+          echo "$markdown_files" | while read mdfile; do
+            # Get the filename without extension and path
+            filename=$(basename "$mdfile" .md)
+            # Get directory path
+            dirname=$(dirname "$mdfile")
+            
+            # Create directory structure in pdf_output if nested
+            if [ "$dirname" != "." ]; then
+              mkdir -p "pdf_output$(echo $dirname | cut -c 2-)"
+              output_path="pdf_output$(echo $dirname | cut -c 2-)/$filename.pdf"
+            else
+              output_path="pdf_output/$filename.pdf"
+            fi
+            
+            echo "Converting $mdfile to $output_path"
+            pandoc "$mdfile" -o "$output_path" --pdf-engine=xelatex
+          done
+          
+          echo "Generated PDFs:"
+          find pdf_output -name "*.pdf"
+          
+      - name: Upload PDF artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-pdfs
+          path: pdf_output/

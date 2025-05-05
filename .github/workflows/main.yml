@@ -1,30 +1,58 @@
-name: convert
+# Sample workflow for building and converting Markdown files to PDF
+name: Convert to PDF
 
 on:
+  # Runs on pushes targeting the default branch
   push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment of artifacts
+permissions:
+  contents: read
+
+# Allow only one concurrent conversion, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production builds to complete.
+concurrency:
+  group: "pdf-build"
+  cancel-in-progress: false
 
 jobs:
-  converttopdf:
+  # Build job
+  build_pdf:
     name: Build PDF
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Build book
-        run: |-
-          npm install -g md-to-pdf
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install -g md-to-pdf
+      
+      - name: Generate PDF
+        run: |
           mkdir -p _output
           cd test
-          echo; echo "Input Folder Listing"
+          echo "Input Folder Listing"
           ls
-          echo; echo "Generating PDF"
-          for f in *.md; do cat $f; echo; done | md-to-pdf > ../_output/blue-paper.pdf
+          echo "Generating PDF"
+          for f in *.md; do
+            echo "Processing $f"
+            md-to-pdf $f --output ../_output/$(basename "$f" .md).pdf
+          done
           cd ../_output
-          echo; echo "Output Folder Listing"
+          echo "Output Folder Listing"
           ls
-          cd ..
       
-      - uses: actions/upload-artifact@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: output
+          name: pdf-output
           path: _output
